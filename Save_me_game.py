@@ -12,10 +12,13 @@ HEIGHT = 600
 BG_COLOR = (0, 0, 0)
 
 POWER_RADIUS = 11
-POWER_COLOR = (0, 0, 255)
 POWER_SIZE = 11
 RESPAWN_POWER = 14
 POWER_DURATION = 7
+
+INVULNERABLE_POWER_COLOR = (128,0,128)
+DESTROY_ALL_POWER_COLOR = (255,255,0)
+DONT_TOUCH_POWER_COLOR = (255,255,255)
 
 CIRCLE_RADIUS = 11
 CIRCLE_COLOR = (255, 140, 0)
@@ -52,12 +55,10 @@ def create_player():
     return player
 
 
-def draw(player, circles, powers, elapsed_time):
+def draw(player, circles, powers, elapsed_time, POWER_COLOR, rune_spawned):
 
     # Draw the circles
     screen.fill(BG_COLOR)
-    time_text = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
-    screen.blit(time_text, (10, 10))
 
     for power in powers:
         pygame.draw.circle(screen, POWER_COLOR, power.center, POWER_RADIUS)
@@ -83,6 +84,12 @@ def draw(player, circles, powers, elapsed_time):
     for circle, _, _ in circles:
         pygame.draw.circle(screen, CIRCLE_COLOR, circle.center, CIRCLE_RADIUS)
 
+    time_text = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
+    screen.blit(time_text, (10, 10))
+
+    for i in rune_spawned:
+        power_text = FONT.render(i, 1, "green")
+        screen.blit(power_text, ((WIDTH - power_text.get_width()) - 15, power_text.get_height() - 25))
 
     pygame.display.update()
 
@@ -94,23 +101,24 @@ def main():
 
     # Keep track of the circles
     circles = []
-    next_circle_time = time.time()
+    next_circle_time = time.time() + 2
 
     powers = []
-    next_power_time = time.time()
-    power_duration = time.time()
+    POWER_COLOR = (0, 255, 0)
+    next_power_time = time.time() + 7
 
-
+    rune_spawned = []
 
     start_time = time.time()
 
     # Game loop
     running = True
     hit = False
+    power_collected = True
     invulnerable = False
     dont_touch_me = False
 
-    invulnerable_duration = 5.0
+    power_duration = time.time() + 5.0
 
     while running:
         elapsed_time = time.time() - start_time
@@ -125,6 +133,16 @@ def main():
             next_circle_time = time.time() + RESPAWN_CIRCLE
 
         if time.time() >= next_power_time:
+            power_runes = ["INVULNERABLE", "DESTROY_ALL", "DONT_TOUCH"]
+            RUNE_SPAWNED = random.sample(power_runes, 1)[0]
+
+            if RUNE_SPAWNED == "INVULNERABLE":
+                POWER_COLOR = INVULNERABLE_POWER_COLOR
+            elif RUNE_SPAWNED == "DESTROY_ALL":
+                POWER_COLOR = DESTROY_ALL_POWER_COLOR
+            elif RUNE_SPAWNED == "DONT_TOUCH":
+                POWER_COLOR = DONT_TOUCH_POWER_COLOR
+
             powers.append(create_power_up())
             next_power_time = time.time() + RESPAWN_POWER
             power_duration = time.time() + POWER_DURATION
@@ -133,33 +151,38 @@ def main():
         for i, (circle, vx, vy) in enumerate(drones):
             if circle.colliderect(player):
                 if dont_touch_me:
-                    try:
-                        circles.remove((circle, vx, vy))
-                    except ValueError:
-                        pass
+                    circles.remove((circle, vx, vy))
                 else:
                     hit = True
 
-        if power_duration >= time.time() and elapsed_time > 20:
-            spawn_power = True
-        else:
-            pass
 
         for power in powers:
             if power.colliderect(player):
                 powers.pop()
+                power_collected = True
                 next_power_time = time.time() + RESPAWN_POWER
-                invulnerable_duration = time.time() + 5.0
-                print("Power caught")
+                power_duration = time.time() + 5.0
             elif time.time() >= power_duration:
                 powers.pop()
-                print("Power Time OUt")
 
-        if time.time() <= invulnerable_duration:
-            dont_touch_me = True
-            hit = False
+        if time.time() <= power_duration and power_collected and time.time() > start_time + 7:
+            rune_spawned.append(RUNE_SPAWNED)
+
+            if RUNE_SPAWNED == "INVULNERABLE":
+                invulnerable = True
+                hit = False
+
+            if RUNE_SPAWNED == "DONT_TOUCH":
+                dont_touch_me = True
+                hit = False
+
+            if RUNE_SPAWNED == "DESTROY_ALL":
+                circles.clear()
         else:
+            invulnerable = False
             dont_touch_me = False
+            power_collected = False
+            rune_spawned.clear()
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player.x - PLAYER_VEL >= 0:
@@ -180,7 +203,7 @@ def main():
             pygame.time.delay(4000)
             break
 
-        draw(player, circles, powers, elapsed_time)
+        draw(player, circles, powers, elapsed_time, POWER_COLOR, rune_spawned)
         clock.tick(60)
 
     pygame.quit()
