@@ -1,37 +1,71 @@
 import pygame
+import pygame.mixer
 import random
 import time
 from PIL import Image
 
-
 pygame.font.init()
+pygame.mixer.init()
+
 pygame.display.set_caption("Save Me")
 
 # Define constants
 
-WIDTH = 800
-HEIGHT = 600
+
+WIDTH, HEIGHT = 800, 600
 BG_COLOR = (255, 255, 255)
 BACKGROUND_IMG = "assets/background/bg2.gif"
 
 POWER_RADIUS = 11
-POWER_SIZE = 11
+POWER_SIZE = POWER_RADIUS
 RESPAWN_POWER = 14
 POWER_DURATION = 7
 
-INVULNERABLE_POWER_COLOR = (128,0,128)
-DESTROY_ALL_POWER_COLOR = (255,255,0)
-DONT_TOUCH_POWER_COLOR = (0,0,0)
-
-
 CIRCLE_RADIUS = 50
-CIRCLE_COLOR = (255, 140, 0)
 CIRCLE_VELOCITY = 5
 RESPAWN_CIRCLE = 5
 
 PLAYER_WIDTH = 25
 PLAYER_HEIGHT = 25
 PLAYER_VEL = 5
+
+TOP_SCORE = 0
+
+try:
+    with open("settings.ini") as file:
+        data = file.readlines()
+        for line in data:
+            if line.startswith("#") or line.startswith("\n"):
+                pass
+            else:
+                values = str(line.strip())
+                if line.startswith("WIDTH"):
+                    WIDTH = int(values.split(" = ")[1])
+                if line.startswith("HEIGHT"):
+                    HEIGHT = int(values.split(" = ")[1])
+                if line.startswith("POWER_RADIUS"):
+                    POWER_RADIUS = int(values.split(" = ")[1])
+                if line.startswith("RESPAWN_POWER"):
+                    RESPAWN_POWER = int(values.split(" = ")[1])
+                if line.startswith("POWER_DURATION"):
+                    POWER_DURATION = int(values.split(" = ")[1])
+                if line.startswith("CIRCLE_RADIUS"):
+                    CIRCLE_RADIUS = int(values.split(" = ")[1])
+                if line.startswith("CIRCLE_VELOCITY"):
+                    CIRCLE_VELOCITY = int(values.split(" = ")[1])
+                if line.startswith("RESPAWN_CIRCLE"):
+                    RESPAWN_CIRCLE = int(values.split(" = ")[1])
+                if line.startswith("PLAYER_WIDTH"):
+                    PLAYER_WIDTH = int(values.split(" = ")[1])
+                if line.startswith("PLAYER_HEIGHT"):
+                    PLAYER_HEIGHT = int(values.split(" = ")[1])
+                if line.startswith("PLAYER_VEL"):
+                    PLAYER_VEL = int(values.split(" = ")[1])
+                if line.startswith("TOP_SCORE"):
+                    TOP_SCORE = int(values.split(" = ")[1])
+except FileNotFoundError:
+    pass
+
 PLAYER_IMAGE = pygame.image.load("assets/spawns/player.jpg")
 PLAYER_IMAGE = pygame.transform.scale(PLAYER_IMAGE, (35, 35))
 PLAYER_FIRE_IMG = "assets/spawns/player_fire.gif"
@@ -45,8 +79,19 @@ ENEMY_DEAD_IMG = "assets/spawns/enemy_dead.gif"
 SHIELD_IMG = pygame.image.load("assets/spawns/shield.png")
 SHIELD_IMG = pygame.transform.scale(SHIELD_IMG, (PLAYER_WIDTH + 50, PLAYER_HEIGHT + 50))
 
-
 ENEMY_IMG = "assets/spawns/enemy8.gif"
+
+
+
+PLAYER_SOUND = pygame.mixer.Sound("assets\sounds\Player.wav")
+DESTROY_ALL_SOUND = pygame.mixer.Sound("assets\sounds\Destroy_All.wav")
+SINGLE_ENEMY_KILL = pygame.mixer.Sound("assets\sounds\Ring_Destroyed.wav")
+FIRE_RUNE_PICKUP_SOUND = pygame.mixer.Sound("assets\sounds\Fire_Rune_Collected.wav")
+ENEMY_COLLIDE_SOUND = pygame.mixer.Sound("assets\sounds\Ring_Collide.wav")
+SHIELD_SOUND = pygame.mixer.Sound("assets\sounds\Shield.wav")
+WALL_HIT_SOUND = pygame.mixer.Sound("assets\sounds\Wall_Hit.wav")
+RUNE_SPAWNED_SOUND = pygame.mixer.Sound("assets\sounds\Spawn.wav")
+LOST_SOUND = pygame.mixer.Sound("assets\sounds\Lost.wav")
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 FONT = pygame.font.SysFont("comicsans", 30)
@@ -135,9 +180,20 @@ def draw(background, player, circles, powers, fire_ring, fire_rune, shield_rune,
         circle.move_ip(vx, vy)
 
         if circle.left < 0 or circle.right > WIDTH:
+            WALL_HIT_SOUND.play()
             vx = -vx
         if circle.top < 0 or circle.bottom > HEIGHT:
+            if circle.bottom > HEIGHT:
+                WALL_HIT_SOUND.play()
             vy = -vy
+
+        for j, (other_circle, other_vx, other_vy) in enumerate(circles):
+            if i != j:
+                if circle.colliderect(other_circle):
+                    ENEMY_COLLIDE_SOUND.play()
+                    vx = -vx
+                    vy = -vy
+                    circles[i] = (circle, vx, vy)
 
         circles[i] = (circle, vx, vy)
 
@@ -146,8 +202,8 @@ def draw(background, player, circles, powers, fire_ring, fire_rune, shield_rune,
         # pygame.draw.circle(screen, CIRCLE_COLOR, circle.center, CIRCLE_RADIUS)
 
     for circle, _, _ in single_enemy_explosion_effect:
+        SINGLE_ENEMY_KILL.play()
         screen.blit(single_enemy_dead, (circle.x, circle.y))
-
 
     if len(rune_collected) > 0:
         if rune_collected[0] == "DONT_TOUCH":
@@ -165,9 +221,17 @@ def draw(background, player, circles, powers, fire_ring, fire_rune, shield_rune,
     screen.blit(time_text, (10, 10))
 
 
-    for i in rune_collected:
-        power_text = FONT.render(i, 1, "green")
-        screen.blit(power_text, ((WIDTH - power_text.get_width()) - 15, power_text.get_height() - 25))
+    # for i in rune_collected:
+    #     power_text = FONT.render(i, 1, "green")
+    #     screen.blit(power_text, ((WIDTH - power_text.get_width()) - 15, power_text.get_height() - 25))
+
+    if round(elapsed_time) > TOP_SCORE:
+        top_score = FONT.render(f'TOP SCORE: {round(elapsed_time):3}', 1, "green")
+        screen.blit(top_score, ((WIDTH - top_score.get_width()) - 15, top_score.get_height() - 25))
+    else:
+        top_score = FONT.render(f'TOP SCORE: {TOP_SCORE:2}', 1, "green")
+        screen.blit(top_score, ((WIDTH - top_score.get_width()) - 15, top_score.get_height() - 25))
+
 
     pygame.display.update()
 
@@ -182,6 +246,9 @@ def main():
     enemy_images = get_gif_frames(ENEMY_IMG, CIRCLE_RADIUS, CIRCLE_RADIUS)
     enemy_dead_images = get_gif_frames(ENEMIES_DEAD_IMG, CIRCLE_RADIUS + 70, CIRCLE_RADIUS + 70)
     single_enemy_dead_images = get_gif_frames(ENEMY_DEAD_IMG, CIRCLE_RADIUS + 35, CIRCLE_RADIUS + 35)
+
+    # Loading Sounds
+
 
 
     bg_img_index = 0
@@ -237,7 +304,6 @@ def main():
 
         current_time = pygame.time.get_ticks()
 
-
         if current_time - last_timer_event >= timer_interval:
             bg_img_index = (bg_img_index + 1) % len(background_images)
             fire_ring_index = (fire_ring_index + 1) % len(fire_ring_images)
@@ -245,7 +311,6 @@ def main():
             shield_rune_index = (shield_rune_index + 1) % len(shield_rune_images)
             destroy_all_rune_index = (destroy_all_rune_index + 1) % len(destroy_all_rune_images)
             enemy_index = (enemy_index + 3) % len(enemy_images)
-            enemy_dead_index = (enemy_dead_index + 1) % len(enemy_dead_images)
             single_enemy_dead_index = (single_enemy_dead_index + 1) % len(single_enemy_dead_images)
             last_timer_event = current_time
 
@@ -256,7 +321,6 @@ def main():
         destroy_all_rune = destroy_all_rune_images[destroy_all_rune_index]
         enemy = enemy_images[enemy_index]
         single_enemy_dead = single_enemy_dead_images[single_enemy_dead_index]
-        enemy_dead = enemy_dead_images[enemy_dead_index]
 
         # Create a new circle if it's time
         if time.time() >= next_circle_time:
@@ -265,11 +329,12 @@ def main():
             next_circle_time = time.time() + RESPAWN_CIRCLE
 
         if time.time() >= next_power_time:
-            random_number = random.randint(1, 100) > 66
-            if random_number and elapsed_time > 20:
+            RUNE_SPAWNED_SOUND.play()
+            random_number = random.randint(1, 100) < 0
+            if random_number:
                 RUNE_SPAWNED = "DESTROY_ALL"
             else:
-                RUNE_SPAWNED = random.choice(["INVULNERABLE", "DONT_TOUCH"])
+                RUNE_SPAWNED = random.choice(["DONT_TOUCH", "DONT_TOUCH"])
 
             powers.append(create_power_up())
             next_power_time = time.time() + RESPAWN_POWER
@@ -292,12 +357,13 @@ def main():
         if single_explosion_effect > time.time():
             pass
         else:
+            SINGLE_ENEMY_KILL.stop()
             single_enemy_explosion_effect.clear()
 
         for power in powers:
             if power.colliderect(player):
-                if RUNE_SPAWNED == "DESTROY_ALL":
-                    next_circle_time = time.time()
+                if RUNE_SPAWNED == "DONT_TOUCH":
+                    FIRE_RUNE_PICKUP_SOUND.play()
                 powers.pop()
                 power_collected = True
                 next_power_time = time.time() + RESPAWN_POWER
@@ -309,6 +375,7 @@ def main():
             rune_collected.append(RUNE_SPAWNED)
 
             if RUNE_SPAWNED == "INVULNERABLE":
+                SHIELD_SOUND.play()
                 invulnerable = True
                 hit = False
 
@@ -318,8 +385,12 @@ def main():
                 single_explosion_effect = time.time() + 0.2
 
             if RUNE_SPAWNED == "DESTROY_ALL":
+                next_circle_time = time.time()
+                enemy_dead_index = (enemy_dead_index + 1) % len(enemy_dead_images)
+                enemy_dead = enemy_dead_images[enemy_dead_index]
                 if len(circles) > 1:
-                    explosion_effect = time.time() + 0.5
+                    explosion_effect = time.time() + 0.2
+                    DESTROY_ALL_SOUND.play()
                     explosion_effect_container = circles.copy()
                 circles.clear()
         else:
@@ -344,7 +415,15 @@ def main():
             lost_text = FONT.render("You Lost!", 1, "white")
             screen.blit(lost_text, (WIDTH/2 - lost_text.get_width()/2, HEIGHT/2 - lost_text.get_height()/2))
             pygame.display.update()
-            pygame.time.delay(4000)
+            LOST_SOUND.play()
+            if elapsed_time > TOP_SCORE:
+                with open("settings.ini", 'r') as file:
+                    filedata = file.read()
+                filedata = filedata.replace(f'TOP_SCORE = {TOP_SCORE}', f'TOP_SCORE = {round(elapsed_time)}')
+
+                with open("settings.ini", 'w') as file:
+                    file.write(filedata)
+            pygame.time.delay(5000)
             break
 
         draw(backgound, player, circles, powers, fire_ring, fire_rune, shield_rune, destroy_all_rune, elapsed_time, RUNE_SPAWNED, rune_collected, enemy, explosion_effect_container, single_enemy_explosion_effect, single_enemy_dead)
