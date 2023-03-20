@@ -1,9 +1,7 @@
 import pygame
 import pygame.mixer
 import random
-import collections
-import time
-from PIL import Image
+
 
 pygame.font.init()
 pygame.mixer.init()
@@ -11,7 +9,6 @@ pygame.mixer.init()
 pygame.display.set_caption("Snake Game")
 
 # Define constants
-
 WIDTH = 800
 HEIGHT = 600
 BG_COLOR = (0, 0, 0)
@@ -165,7 +162,6 @@ def main():
                                 else:
                                     check_collision.append(i)
                             snake.pop(0)
-
 
         if go_down is False:
             if snake[-1].y <= 0:
