@@ -1,6 +1,7 @@
 import pygame
 import pygame.mixer
 import random
+import time
 
 
 pygame.font.init()
@@ -18,6 +19,8 @@ PLAYER_HEIGHT = 20
 
 GROW_RADIUS = 11
 GROW_COLOR = (0, 255, 0)
+GROW_VX = 20
+GROW_VY = 20
 
 START_X = WIDTH / 4
 START_Y = HEIGHT / 2
@@ -33,23 +36,35 @@ def create_energy(snake):
             x = random.randint(GROW_RADIUS, WIDTH - GROW_RADIUS)
         if i.y == y:
             y = random.randint(GROW_RADIUS, HEIGHT - GROW_RADIUS)
-    x = random.randint(GROW_RADIUS, WIDTH - GROW_RADIUS)
-    y = random.randint(GROW_RADIUS, HEIGHT - GROW_RADIUS)
-    circle = pygame.Rect(x - GROW_RADIUS, y - GROW_RADIUS, GROW_RADIUS * 2, GROW_RADIUS * 2)
+    circle = pygame.Rect(x - GROW_RADIUS, y - GROW_RADIUS, GROW_RADIUS * 2, GROW_RADIUS * 2), GROW_VX, GROW_VY
     return circle
 
 
-def draw(snake, power):
+def draw(snake, power, power_movement):
     screen.fill(BG_COLOR)
 
     for i in snake:
         pygame.draw.rect(screen, "blue", i)
 
-    for i in power:
-        pygame.draw.circle(screen, GROW_COLOR, i.center, GROW_RADIUS)
+    # If you want energy to move uncomment below code
 
+    # for i, (circle, vx, vy) in enumerate(power):
+    #     if power_movement == "power_move_up":
+    #         circle.move_ip(0, -vy)
+    #     if power_movement == "power_move_down":
+    #         circle.move_ip(0, vy)
+    #     if power_movement == "power_move_left":
+    #         circle.move_ip(-vx, 0)
+    #     if power_movement == "power_move_right":
+    #         circle.move_ip(vx, 0)
+    #     if circle.left < 20 or circle.right > WIDTH - 20:
+    #         vx = -vx
+    #     if circle.top < 20 or circle.bottom > HEIGHT - 20:
+    #         vy = -vy
+    #     power[i] = (circle, vx, vy)
 
-
+    for i, (circle, vx, vy) in enumerate(power):
+        pygame.draw.circle(screen, GROW_COLOR, circle.center, GROW_RADIUS)
 
 
     pygame.display.update()
@@ -58,17 +73,21 @@ def draw(snake, power):
 def main():
     clock = pygame.time.Clock()
 
+
     go_right = True
     go_down = True
     go_up = True
     go_left = False
 
-
     running = True
+
+    power_movement = "power_move_right"
 
     count = PLAYER_WIDTH
 
     snake = []
+
+    energy_movement_time = time.time() + 0.25
 
     for i in range(1,7):
         player = pygame.Rect(START_X + count, START_Y, PLAYER_WIDTH, PLAYER_HEIGHT)
@@ -85,8 +104,12 @@ def main():
                 running = False
 
         clock.tick(15)
-        keys = pygame.key.get_pressed()
 
+        if not energy_movement_time > time.time():
+            power_movement = random.choice(["power_move_up", "power_move_down", "power_move_left", "power_move_right"])
+            energy_movement_time = time.time() + 0.25
+
+        keys = pygame.key.get_pressed()
         if go_right:
             if keys[pygame.K_RIGHT]:
                 start = 1
@@ -125,8 +148,8 @@ def main():
                 player = pygame.Rect(snake[-1].x - PLAYER_WIDTH, snake[-1].y,
                                      PLAYER_WIDTH, PLAYER_HEIGHT)
 
-                for i in power:
-                    if player.colliderect(i):
+                for i, (circle, vx, vy) in enumerate(power):
+                    if player.colliderect(circle):
                         power.clear()
                         power = [create_energy(snake)]
                         snake.append(player)
@@ -148,8 +171,8 @@ def main():
                     player = pygame.Rect(snake[-1].x + PLAYER_WIDTH, snake[-1].y,
                                          PLAYER_WIDTH, PLAYER_HEIGHT)
 
-                    for i in power:
-                        if player.colliderect(i):
+                    for i, (circle, vx, vy) in enumerate(power):
+                        if player.colliderect(circle):
                             power.clear()
                             power = [create_energy(snake)]
                             snake.append(player)
@@ -170,8 +193,8 @@ def main():
                 player = pygame.Rect(snake[-1].x, snake[-1].y - PLAYER_HEIGHT,
                                      PLAYER_WIDTH, PLAYER_HEIGHT)
 
-                for i in power:
-                    if player.colliderect(i):
+                for i, (circle, vx, vy) in enumerate(power):
+                    if player.colliderect(circle):
                         power.clear()
                         power = [create_energy(snake)]
                         snake.append(player)
@@ -192,8 +215,8 @@ def main():
                 player = pygame.Rect(snake[-1].x, snake[-1].y + PLAYER_HEIGHT,
                                      PLAYER_WIDTH, PLAYER_HEIGHT)
 
-                for i in power:
-                    if player.colliderect(i):
+                for i, (circle, vx, vy) in enumerate(power):
+                    if player.colliderect(circle):
                         power.clear()
                         power = [create_energy(snake)]
                         snake.append(player)
@@ -207,7 +230,7 @@ def main():
                                 check_collision.append(i)
                         snake.pop(0)
 
-        draw(snake, power)
+        draw(snake, power, power_movement)
 
 
 if __name__ == "__main__":
