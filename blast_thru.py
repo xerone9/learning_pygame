@@ -40,7 +40,7 @@ def create_ball():
     return circle
 
 
-def draw(player, ball, start, bricks):
+def draw(player, ball, start, bricks, CHECK_DIRECTION):
     screen.fill(BG_COLOR)
 
     for i, (circle, vx, vy) in enumerate(ball):
@@ -49,10 +49,18 @@ def draw(player, ball, start, bricks):
 
             if circle.colliderect(player):
                 collision_pos = (175 - (player.right - circle.left)) - (BALL_RADIUS * 3)
-                if collision_pos < 60:
+                if collision_pos < 40:
                     print("bounce left")
-                elif collision_pos > 80:
+                    if CHECK_DIRECTION[0] - sum(CHECK_DIRECTION[1:]) > 0:
+                        pass
+                    else:
+                        vx = -vx
+                elif collision_pos > 120:
                     print("bounce right")
+                    if CHECK_DIRECTION[0] - sum(CHECK_DIRECTION[1:]) < 0:
+                        pass
+                    else:
+                        vx = -vx
                 vy = -vy
             else:
                 if circle.left < 0 or circle.right > WIDTH:
@@ -84,6 +92,7 @@ def draw(player, ball, start, bricks):
                 if j != "broken":
                     if circle.colliderect(i):
                         vy = -vy
+                        vx = -vx
                         ball[j] = (circle, vx, vy)
 
     pygame.draw.rect(screen, PLAYER_COLOR, player)
@@ -96,6 +105,7 @@ def main():
 
     player = pygame.Rect(WIDTH/2 - PLAYER_WIDTH/2, HEIGHT - PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT)
     ball = [create_ball()]
+    CHECK_DIRECTION = [0, 0]
 
     bricks = []
 
@@ -138,10 +148,12 @@ def main():
                     if circle.colliderect(i):
                         bricks[index] = "broken"
 
-
+        for index, (circle, vx, vy) in enumerate(ball):
+            CHECK_DIRECTION.append(circle.x)
+            CHECK_DIRECTION.pop(0)
 
         clock.tick(60)
-        draw(player, ball, start, bricks)
+        draw(player, ball, start, bricks, CHECK_DIRECTION)
 
 
 if __name__ == "__main__":
