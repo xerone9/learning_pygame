@@ -11,34 +11,36 @@ pygame.init()
 pygame.display.set_caption("Snake Game")
 
 # Define constants
-WIDTH = 820
+WIDTH = 800
 HEIGHT = 600
 BG_COLOR = (0, 0, 0)
 
 PLAYER_WIDTH = 125
 PLAYER_HEIGHT = 15
 PLAYER_COLOR = "blue"
-PLAYER_VEL = 5
+PLAYER_VEL = 10
 
-BALL_RADIUS = 10
+ONE_LINE_CONTAIN_BRICKS = 20
+NO_OF_LINES = 10
+BRICK_WIDTH = WIDTH / ONE_LINE_CONTAIN_BRICKS
+BRICK_HEIGHT = HEIGHT / 30
+BRICK_COLOR = ["red", "pink"]
+
+BALL_RADIUS = PLAYER_HEIGHT / 2
 BALL_COLOR = "green"
 BALL_VEL_X = 5
 BALL_VEL_Y = 5
-
-BRICK_WIDTH = 25
-BRICK_HEIGHT = 15
-BRICK_COLOR = "red"
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 def create_ball():
     x = WIDTH/2 - BALL_RADIUS/2
     y = HEIGHT - PLAYER_HEIGHT
-    circle = pygame.Rect(x - BALL_RADIUS, y - BALL_RADIUS * 2, BALL_RADIUS * 2, BALL_RADIUS * 2), BALL_VEL_X, BALL_VEL_Y
+    circle = pygame.Rect(x - BALL_RADIUS, y - BALL_RADIUS*2, BALL_RADIUS, BALL_RADIUS), BALL_VEL_X, BALL_VEL_Y
     return circle
 
 
-def draw(player, ball, start, bricks, color_sequence_of_bricks):
+def draw(player, ball, start, bricks):
     screen.fill(BG_COLOR)
 
     for i, (circle, vx, vy) in enumerate(ball):
@@ -65,19 +67,24 @@ def draw(player, ball, start, bricks, color_sequence_of_bricks):
     for circle, _, _ in ball:
         pygame.draw.circle(screen, BALL_COLOR, circle.center, BALL_RADIUS)
 
-    count = 1
+    count = 0
     for brick in bricks:
-        if count % 2 == 0:
-            pygame.draw.rect(screen, BRICK_COLOR, brick)
-        else:
-            pygame.draw.rect(screen, "pink", brick)
+        if count % ONE_LINE_CONTAIN_BRICKS == 0:
+            BRICK_COLOR.reverse()
+        if brick != "broken":
+            if count % 2 == 0:
+                pygame.draw.rect(screen, BRICK_COLOR[0], brick)
+            else:
+                pygame.draw.rect(screen, BRICK_COLOR[1], brick)
         count += 1
 
     for i in bricks:
-        for j, (circle, vx, vy) in enumerate(ball):
-            if circle.colliderect(i):
-                vy = -vy
-                ball[j] = (circle, vx, vy)
+        if i != "broken":
+            for j, (circle, vx, vy) in enumerate(ball):
+                if j != "broken":
+                    if circle.colliderect(i):
+                        vy = -vy
+                        ball[j] = (circle, vx, vy)
 
     pygame.draw.rect(screen, PLAYER_COLOR, player)
 
@@ -91,25 +98,18 @@ def main():
     ball = [create_ball()]
 
     bricks = []
-    color_sequence_of_bricks = []
 
     x = 0
     y = 0
     count = 1
-    for i in range(1,493):
+    for i in range(1, (ONE_LINE_CONTAIN_BRICKS * NO_OF_LINES) + 1):
         if x >= WIDTH:
             y += BRICK_HEIGHT
             x = 0
         brick = pygame.Rect(x, y, BRICK_WIDTH, BRICK_HEIGHT)
-        x += 20
+        x += BRICK_WIDTH
         bricks.append(brick)
-        if count % 2 == 0:
-            color_sequence_of_bricks.append("pink")
-        else:
-            color_sequence_of_bricks.append("red")
         count += 1
-
-    color_sequence_of_bricks = bricks.copy()
 
     running = True
     start = False
@@ -124,7 +124,7 @@ def main():
         if keys[pygame.K_LEFT] and player.x >= 0:
             start = True
             player.x -= PLAYER_VEL
-        if keys[pygame.K_RIGHT] and player.x + PLAYER_VEL + player.width <= WIDTH:
+        if keys[pygame.K_RIGHT] and player.x + player.width <= WIDTH:
             start = True
             player.x += PLAYER_VEL
 
@@ -132,14 +132,16 @@ def main():
             if circle.y + PLAYER_HEIGHT >= HEIGHT:
                 running = False
 
-        for i in bricks:
-            for j, (circle, vx, vy) in enumerate(ball):
-                if circle.colliderect(i):
-                    bricks.remove(i)
+        for index, i in enumerate(bricks):
+            if i != "broken":
+                for j, (circle, vx, vy) in enumerate(ball):
+                    if circle.colliderect(i):
+                        bricks[index] = "broken"
+
 
 
         clock.tick(60)
-        draw(player, ball, start, bricks, color_sequence_of_bricks)
+        draw(player, ball, start, bricks)
 
 
 if __name__ == "__main__":
