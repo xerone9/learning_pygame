@@ -21,7 +21,7 @@ PLAYER_COLOR = "blue"
 PLAYER_VEL = 10
 
 ONE_LINE_CONTAIN_BRICKS = 20
-NO_OF_LINES = 10
+NO_OF_LINES = 10 # Must Be Even
 BRICK_WIDTH = WIDTH / ONE_LINE_CONTAIN_BRICKS
 BRICK_HEIGHT = HEIGHT / 30
 BRICK_COLOR = ["red", "pink"]
@@ -40,7 +40,7 @@ def create_ball():
     return circle
 
 
-def draw(player, ball, start, bricks, CHECK_DIRECTION):
+def draw(player, ball, start, bricks, CHECK_DIRECTION_X):
     screen.fill(BG_COLOR)
 
     for i, (circle, vx, vy) in enumerate(ball):
@@ -51,13 +51,13 @@ def draw(player, ball, start, bricks, CHECK_DIRECTION):
                 collision_pos = (175 - (player.right - circle.left)) - (BALL_RADIUS * 3)
                 if collision_pos < 40:
                     print("bounce left")
-                    if CHECK_DIRECTION[0] - sum(CHECK_DIRECTION[1:]) > 0:
+                    if CHECK_DIRECTION_X[0] - sum(CHECK_DIRECTION_X[1:]) > 0:
                         pass
                     else:
                         vx = -vx
                 elif collision_pos > 120:
                     print("bounce right")
-                    if CHECK_DIRECTION[0] - sum(CHECK_DIRECTION[1:]) < 0:
+                    if CHECK_DIRECTION_X[0] - sum(CHECK_DIRECTION_X[1:]) < 0:
                         pass
                     else:
                         vx = -vx
@@ -91,8 +91,13 @@ def draw(player, ball, start, bricks, CHECK_DIRECTION):
             for j, (circle, vx, vy) in enumerate(ball):
                 if j != "broken":
                     if circle.colliderect(i):
-                        vy = -vy
-                        vx = -vx
+                        if circle.top < i.top or circle.bottom > i.bottom:
+                            vy = -vy
+                            vx = vx
+                        elif circle.left < i.left or circle.right > i.right:
+                            vx = -vx
+                            vy = vy
+
                         ball[j] = (circle, vx, vy)
 
     pygame.draw.rect(screen, PLAYER_COLOR, player)
@@ -105,7 +110,8 @@ def main():
 
     player = pygame.Rect(WIDTH/2 - PLAYER_WIDTH/2, HEIGHT - PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT)
     ball = [create_ball()]
-    CHECK_DIRECTION = [0, 0]
+    CHECK_DIRECTION_X = [0, 0]
+    CHECK_DIRECTION_Y = [0, 0]
 
     bricks = []
 
@@ -149,11 +155,12 @@ def main():
                         bricks[index] = "broken"
 
         for index, (circle, vx, vy) in enumerate(ball):
-            CHECK_DIRECTION.append(circle.x)
-            CHECK_DIRECTION.pop(0)
+            CHECK_DIRECTION_X.append(circle.x)
+            CHECK_DIRECTION_X.pop(0)
+
 
         clock.tick(60)
-        draw(player, ball, start, bricks, CHECK_DIRECTION)
+        draw(player, ball, start, bricks, CHECK_DIRECTION_X)
 
 
 if __name__ == "__main__":
