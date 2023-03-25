@@ -21,7 +21,7 @@ BALL_COLOR = "dark orange"
 BALL_VEL_X = 2
 BALL_VEL_Y = 2
 
-NO_OF_BALLS = 17 # Odd Number Only (Still dont know whats the bug)
+NO_OF_BALLS = 41 # Odd Number Only (Still dont know whats the bug)
 
 PLAYER_WIDTH = BALL_RADIUS / 2
 PLAYER_HEIGHT = PLAYER_WIDTH
@@ -51,6 +51,7 @@ def draw(circles, player, elapsed_time, start):
         if start:
             circle.move_ip(vx, vy)
 
+        # Thats causing error if balls are even
         for j, (other_circle, other_vx, other_vy) in enumerate(circles):
             if i != j:
                 distance = math.sqrt((circle.x - other_circle.x) ** 2 + (circle.y - other_circle.y) ** 2)
