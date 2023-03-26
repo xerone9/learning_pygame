@@ -1,11 +1,5 @@
-# number = 25000
-#
-# if 10000 <= number <= 30000:
-#     print("Value in range")
+list1 = ["a", "b", "c", "d"]
+list2 = ["e", "f", "g", "h"]
+all_list = list1, list2
 
-game = []
-
-while len(game) < 3:
-    game.append("a")
-
-print(game)
+print(all_list[0])
