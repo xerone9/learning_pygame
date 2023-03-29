@@ -12,14 +12,14 @@ pygame.init()
 pygame.display.set_caption("Tetris")
 
 # Define constants
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 400
+HEIGHT = 400
 BG_COLOR = (0,0,0)
 
 rect_width = 20
 rect_height = 20
-rect_x = (WIDTH / 2) - (rect_width / 2)
-rect_y = 10
+rect_x = (WIDTH / 2) - rect_width
+rect_y = 20
 vel_y = 20
 vel_x = 20
 
@@ -411,11 +411,6 @@ def s_l_shape():
     all_rotations_blocks.append(blocks)
     all_rotations_borders.append(borders)
 
-    # random_choice = random.randint(0, 3)
-    #
-    # blocks = all_rotations_blocks[random_choice]
-    # borders = all_rotations_borders[random_choice]
-
     blocks = all_rotations_blocks
     borders = all_rotations_borders
 
@@ -487,11 +482,6 @@ def s_r_shape():
 
     all_rotations_blocks.append(blocks)
     all_rotations_borders.append(borders)
-
-    # random_choice = random.randint(0, 3)
-    #
-    # blocks = all_rotations_blocks[random_choice]
-    # borders = all_rotations_borders[random_choice]
 
     blocks = all_rotations_blocks
     borders = all_rotations_borders
@@ -571,21 +561,11 @@ def bar_shape():
 def draw(shape, bottom_bricks, bottom_bricks_border):
     screen.fill(BG_COLOR)
 
-    # pygame.draw.rect(screen, "white", border_of_block, border_width)
-    # pygame.draw.rect(screen, "blue", block)
-
-    # cords = []
-    # for block, border in zip(shape[0], shape[1]):
-    #     pygame.draw.rect(screen, border_color, border, border_width)
-    #     pygame.draw.rect(screen, block_color, block)
-    #     cords.append((block.x, block.y))
-
     for i, (rect, vx, vy) in enumerate(shape[1]):
         pygame.draw.rect(screen, border_color, rect, border_width)
 
     for i, (rect, vx, vy) in enumerate(shape[0]):
         pygame.draw.rect(screen, block_color, rect)
-
 
     for i, (rect, vx, vy) in enumerate(bottom_bricks_border):
         pygame.draw.rect(screen, border_color, rect, border_width)
@@ -593,35 +573,15 @@ def draw(shape, bottom_bricks, bottom_bricks_border):
     for i, (rect, vx, vy) in enumerate(bottom_bricks):
         pygame.draw.rect(screen, block_color, rect)
 
-
-    # new_x = cords[-1][0]
-    # new_y = cords[-1][1]
-    #
-    # rotated_cords = []
-    #
-    # for i in range(len(cords)):
-    #     rotated_cords.append((new_x, new_y))
-    #     new_y += rect_width
-    #
-    # for block, border, cords in zip(shape[0], shape[1], rotated_cords):
-    #     border.x, border.y = (cords[0] - 2, cords[1]-2)
-    #     block.x, block.y = cords
-
-
-
-
-
-
     pygame.display.update()
 
 
 def main():
     clock = pygame.time.Clock()
+
+    elapsed_time = 0
+    next_block = time.time()
     next_spawn = True
-
-
-    # block = pygame.Rect(rect_x + border_width, rect_y + border_width, rect_width - 2 * border_width, rect_height - 2 * border_width)
-    # border_of_block = pygame.Rect(rect_x, rect_y, rect_width, rect_height)
 
     bar = bar_shape()
     box = box_shape()
@@ -631,123 +591,128 @@ def main():
     l_l = l_l_shape()
     l_r = l_r_shape()
 
-    shapes = random.choice([bar, box, t, s_l, s_r, l_l, l_r])
-    rotation = 0
-
+    shape_count = 0
+    shape = None
+    retain_state = True
 
     running = True
     while running:
+        elapsed_time += 1 / 15
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
         if next_spawn:
+            shape_count += 1
+            print("new spawn")
             shapes = random.choice([bar, box, t, s_l, s_r, l_l, l_r])
+            next_block = time.time() + 0.5
             next_spawn = False
 
-        if not shapes == box:
-            if shapes == bar or shapes == s_r or shapes == s_l:
-                rotationx = random.randint(0,1)
+            if not shapes == box:
+                if shapes == bar or shapes == s_r or shapes == s_l:
+                    rotation = random.randint(0,1)
+                else:
+                    rotation = random.randint(0, 3)
+                shape = shapes[0][rotation], shapes[1][rotation]
             else:
-                rotationx = random.randint(0, 3)
-            shape = shapes[0][rotation], shapes[1][rotation]
-        else:
-            shape = box
-
-        if not next_spawn:
-            for i, (rect, vx, vy) in enumerate(shape[0]):
-                rect.y += vel_y
-            for i, (rect, vx, vy) in enumerate(shape[1]):
-                rect.y += vel_y
-
-        for i, (rect, vx, vy) in enumerate(shape[0]):
-            if rect.bottom + rect_height >= HEIGHT:
-                bottom_bricks.append((rect, vx, vy))
-                next_spawn = True
+                shape = box
+            print("shape count ", shape_count, shapes)
 
         for i, (rect, vx, vy) in enumerate(shape[1]):
-            if rect.bottom + rect_height >= HEIGHT:
-                bottom_bricks_border.append((rect, vx, vy))
-                next_spawn = True
+            if time.time() > next_block:
+                if rect.y + rect_height >= HEIGHT:
+                    # print(f'{rect.y} : {HEIGHT}')
+                    for j, (all_rect, all_vx, all_vy) in enumerate(shape[1]):
+                        if (all_rect, all_vx, all_vy) not in bottom_bricks_border:
+                            bottom_bricks_border.append((all_rect, all_vx, all_vy))
+                    for j, (all_rect, all_vx, all_vy) in enumerate(shape[0]):
+                        if (all_rect, all_vx, all_vy) not in bottom_bricks:
+                            bottom_bricks.append((all_rect, all_vx, all_vy))
+                    if not next_spawn:
+                        next_spawn = True
+                        break
 
+        if not next_spawn:
+            if time.time() >= next_block:
+                for i, (rect, vx, vy) in enumerate(shape[1]):
+                    for j, (rect_border, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                        if rect_border.top == rect.bottom and rect.x == rect_border.x:
+                            retain_state = False
+                            break
+                    else:
+                        continue
+                    break
+                if retain_state:
+                    for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                        rect1.y += vel_y
+                        rect2.y += vel_y
+                    next_block = time.time() + 0.5
+                else:
+                    for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                        if (rect1, vx1, vy1) not in bottom_bricks:
+                            bottom_bricks.append((rect1, vx1, vy1))
+                        if (rect2, vx2, vy2) not in bottom_bricks_border:
+                            bottom_bricks_border.append((rect2, vx2, vy2))
+                        retain_state = True
+                        if not next_spawn:
+                            next_spawn = True
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP]:
-            if shapes == box:
-                pass
-            elif shapes == bar or shapes == s_l or shapes == s_r:
-                if rotation < 1:
-                    rotation += 1
-                else:
-                    rotation = 0
-            else:
-                if rotation < 3:
-                    rotation += 1
-                else:
-                    rotation = 0
 
         if keys[pygame.K_LEFT]:
             state = True
             for i, (rect, vx, vy) in enumerate(shape[1]):
-                if rect.x - rect_width < 0:
+                if rect.x <= 0:
                     state = False
-            if state:
-                for i, (rect, vx, vy) in enumerate(shape[1]):
-                    if not rect.x < 0:
-                        rect.x -= vel_x
-                        shape[1][i] = (rect, vx, vy)
+                else:
+                    for j, (all_rect, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                        if all_rect.x + rect_width == rect.x and all_rect.y == rect.y:
+                            state = False
 
-                for i, (rect, vx, vy) in enumerate(shape[0]):
-                    if not rect.x < 0:
-                        rect.x -= vel_x
-                        shape[0][i] = (rect, vx, vy)
+            if state and not next_spawn:
+                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
+                    rect.x -= vel_x
+                    rect_border.x -= vel_x
+                    shape[0][i] = (rect, vx, vy)
+                    shape[1][i] = (rect_border, vx_border, vy_border)
 
         if keys[pygame.K_RIGHT]:
             state = True
-            for i, (rect, vx, vy) in enumerate(shape[0]):
-                if rect.right + rect_width >= WIDTH:
+            for i, (rect, vx, vy) in enumerate(shape[1]):
+                if rect.right >= WIDTH:
                     state = False
-            if state:
-                for i, (rect, vx, vy) in enumerate(shape[1]):
-                    rect.x += vel_x
-                    shape[1][i] = (rect, vx, vy)
+                else:
+                    for j, (all_rect, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                        if rect.x + rect_width == all_rect.x and all_rect.y == rect.y:
+                            state = False
 
-                for i, (rect, vx, vy) in enumerate(shape[0]):
+            if state and not next_spawn:
+                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
                     rect.x += vel_x
+                    rect_border.x += vel_x
                     shape[0][i] = (rect, vx, vy)
+                    shape[1][i] = (rect_border, vx_border, vy_border)
 
         if keys[pygame.K_DOWN]:
             state = True
-            for i, (rect, vx, vy) in enumerate(shape[0]):
-                if rect.bottom + rect_height >= HEIGHT:
+            for i, (rect, vx, vy) in enumerate(shape[1]):
+                if rect.bottom >= HEIGHT:
+                    next_block = time.time()
                     state = False
+                else:
+                    for j, (all_rect, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                        if rect.y + rect_height == all_rect.y and all_rect.x == rect.x:
+                            state = False
+
             if state:
-                for i, (rect, vx, vy) in enumerate(shape[1]):
+                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
                     rect.y += vel_y
-                    shape[1][i] = (rect, vx, vy)
-
-                for i, (rect, vx, vy) in enumerate(shape[0]):
-                    rect.y += vel_y
+                    rect_border.y += vel_y
                     shape[0][i] = (rect, vx, vy)
+                    shape[1][i] = (rect_border, vx_border, vy_border)
 
-        # if keys[pygame.K_RIGHT] and player.x + PLAYER_VEL + player.width <= WIDTH:
-        #     start = True
-        #     player.x += PLAYER_VEL
-        #
-        # if keys[pygame.K_DOWN] and player.y + PLAYER_VEL + player.height <= HEIGHT:
-        #     start = True
-        #     player.y += PLAYER_VEL
-
-
-        # if hit:
-        #     lost_text = FONT.render("You Lost!", 1, "white")
-        #     screen.blit(lost_text, (WIDTH / 2 - lost_text.get_width() / 2, HEIGHT / 2 - lost_text.get_height() / 2))
-        #     pygame.display.update()
-        #     pygame.time.delay(5000)
-        #     break
-
-
-        clock.tick(8)
+        clock.tick(15)
         draw(shape, bottom_bricks, bottom_bricks_border)
 
 

@@ -151,7 +151,6 @@ def main():
             pygame.time.delay(5000)
             break
 
-
         clock.tick(60)
         draw(circles, player, elapsed_time, start)
 
