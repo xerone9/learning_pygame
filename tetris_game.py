@@ -491,7 +491,9 @@ def s_r_shape():
 
 def box_shape():
     blocks = []
+    all_rotations_blocks = []
     borders = []
+    all_rotations_borders = []
     x_axis = rect_x
     y_axis = rect_y + rect_height
 
@@ -517,6 +519,12 @@ def box_shape():
             border_of_block = pygame.Rect(x_axis, y_axis, rect_width, rect_height)
             blocks.append((block, vel_x, vel_y))
             borders.append((border_of_block, vel_x, vel_y))
+
+    all_rotations_blocks.append(blocks)
+    all_rotations_borders.append(borders)
+
+    blocks = all_rotations_blocks
+    borders = all_rotations_borders
 
     return blocks, borders
 
@@ -583,17 +591,14 @@ def main():
     next_block = time.time()
     next_spawn = True
 
-    bar = bar_shape()
-    box = box_shape()
-    t = t_shape()
-    s_l = s_l_shape()
-    s_r = s_r_shape()
-    l_l = l_l_shape()
-    l_r = l_r_shape()
-
     shape_count = 0
-    shape = None
+    shapes = None
+    shape_names = ["bar", "box", "t", "s_l", "s_r", "l_l", "l_r"]
     retain_state = True
+    rotation = 0
+
+    down_pressed = False  # variable to keep track of the space key state
+    prev_down_state = False
 
     running = True
     while running:
@@ -602,10 +607,22 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+        bar = bar_shape()
+        box = box_shape()
+        t = t_shape()
+        s_l = s_l_shape()
+        s_r = s_r_shape()
+        l_l = l_l_shape()
+        l_r = l_r_shape()
+
+
         if next_spawn:
             shape_count += 1
-            print("new spawn")
-            shapes = random.choice([bar, box, t, s_l, s_r, l_l, l_r])
+            # print("new spawn")
+            all_shapes = [bar, box, t, s_l, s_r, l_l, l_r]
+            shapes = random.choice(all_shapes)
+            shape_name = shape_names[all_shapes.index(shapes)]
+            # shapes = box
             next_block = time.time() + 0.5
             next_spawn = False
 
@@ -614,22 +631,22 @@ def main():
                     rotation = random.randint(0,1)
                 else:
                     rotation = random.randint(0, 3)
-                shape = shapes[0][rotation], shapes[1][rotation]
             else:
-                shape = box
-            print("shape count ", shape_count, shapes)
+                rotation = 0
+
+        shape = shapes[0][rotation], shapes[1][rotation]
 
         for i, (rect, vx, vy) in enumerate(shape[1]):
-            if time.time() > next_block:
-                if rect.y + rect_height >= HEIGHT:
-                    # print(f'{rect.y} : {HEIGHT}')
-                    for j, (all_rect, all_vx, all_vy) in enumerate(shape[1]):
-                        if (all_rect, all_vx, all_vy) not in bottom_bricks_border:
-                            bottom_bricks_border.append((all_rect, all_vx, all_vy))
-                    for j, (all_rect, all_vx, all_vy) in enumerate(shape[0]):
-                        if (all_rect, all_vx, all_vy) not in bottom_bricks:
-                            bottom_bricks.append((all_rect, all_vx, all_vy))
-                    if not next_spawn:
+            if not next_spawn:
+                if time.time() >= next_block:
+                    if rect.y + rect_height >= HEIGHT:
+                        # print(f'{rect.y} : {HEIGHT}')
+                        for j, (all_rect, all_vx, all_vy) in enumerate(shape[1]):
+                            if (all_rect, all_vx, all_vy) not in bottom_bricks_border:
+                                bottom_bricks_border.append((all_rect, all_vx, all_vy))
+                        for j, (all_rect, all_vx, all_vy) in enumerate(shape[0]):
+                            if (all_rect, all_vx, all_vy) not in bottom_bricks:
+                                bottom_bricks.append((all_rect, all_vx, all_vy))
                         next_spawn = True
                         break
 
@@ -655,10 +672,26 @@ def main():
                         if (rect2, vx2, vy2) not in bottom_bricks_border:
                             bottom_bricks_border.append((rect2, vx2, vy2))
                         retain_state = True
-                        if not next_spawn:
-                            next_spawn = True
+                    next_spawn = True
 
         keys = pygame.key.get_pressed()
+
+        prev_down_state = down_pressed
+        down_pressed = keys[pygame.K_UP]
+
+        if down_pressed and not prev_down_state:
+            if shape_name == "s_l" or shape_name == "s_r" or shape_name == "bar":
+                if rotation < 1:
+                    rotation += 1
+                else:
+                    rotation = 0
+            elif shape_name == "t" or shape_name == "l_l" or shape_name == "l_r":
+                if rotation < 3:
+                    rotation += 1
+                else:
+                    rotation = 0
+            elif box:
+                pass
 
         if keys[pygame.K_LEFT]:
             state = True
