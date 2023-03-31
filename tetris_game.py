@@ -23,8 +23,6 @@ rect_y = 20
 vel_y = 20
 vel_x = 20
 
-bottom_bricks = []
-bottom_bricks_border = []
 placed_bricks = ""
 
 block_color = "blue"
@@ -270,7 +268,7 @@ def l_r_shape():
     blocks = []
     borders = []
 
-    x_axis = rect_x
+    x_axis = rect_x + rect_width
     y_axis = rect_y
     for i in range(4):
         if i <= 2:
@@ -596,9 +594,17 @@ def main():
     shape_names = ["bar", "box", "t", "s_l", "s_r", "l_l", "l_r"]
     retain_state = True
     rotation = 0
+    all_rotations = 0
+
+    bottom_bricks = []
+    bottom_bricks_border = []
 
     down_pressed = False  # variable to keep track of the space key state
     prev_down_state = False
+
+    check_line_filled = []
+    for i in range(int(WIDTH/rect_width)):
+        check_line_filled.append(i * rect_width)
 
     running = True
     while running:
@@ -618,11 +624,11 @@ def main():
 
         if next_spawn:
             shape_count += 1
-            # print("new spawn")
             all_shapes = [bar, box, t, s_l, s_r, l_l, l_r]
             shapes = random.choice(all_shapes)
-            shape_name = shape_names[all_shapes.index(shapes)]
             # shapes = box
+            all_rotations = len(shapes[0])
+            shape_name = shape_names[all_shapes.index(shapes)]
             next_block = time.time() + 0.5
             next_spawn = False
 
@@ -634,13 +640,17 @@ def main():
             else:
                 rotation = 0
 
-        shape = shapes[0][rotation], shapes[1][rotation]
+        # current_shape_all_rotations = tuple(shapes)
+        blocks = shapes[0]
+        borders = shapes[1]
+
+        shape = blocks[rotation], borders[rotation]
+        # shape = current_shape_all_rotations[0][rotation], current_shape_all_rotations[1][rotation]
 
         for i, (rect, vx, vy) in enumerate(shape[1]):
             if not next_spawn:
                 if time.time() >= next_block:
                     if rect.y + rect_height >= HEIGHT:
-                        # print(f'{rect.y} : {HEIGHT}')
                         for j, (all_rect, all_vx, all_vy) in enumerate(shape[1]):
                             if (all_rect, all_vx, all_vy) not in bottom_bricks_border:
                                 bottom_bricks_border.append((all_rect, all_vx, all_vy))
@@ -661,9 +671,15 @@ def main():
                         continue
                     break
                 if retain_state:
-                    for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
-                        rect1.y += vel_y
-                        rect2.y += vel_y
+                    for j in range(all_rotations):
+                        if j == rotation:
+                            for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                                rect1.y += vel_y
+                                rect2.y += vel_y
+                        else:
+                            for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shapes[0][j], shapes[1][j])):
+                                rect1.y += vel_y
+                                rect2.y += vel_y
                     next_block = time.time() + 0.5
                 else:
                     for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
@@ -674,22 +690,90 @@ def main():
                         retain_state = True
                     next_spawn = True
 
+        get_all_y_axis = []
+        bricks_to_remove = []
+        no_of_rows_to_remove = []
+        for j, (rect_border, vx_border, vy_border) in enumerate(bottom_bricks_border):
+            if rect_border.y not in get_all_y_axis:
+                get_all_y_axis.append(rect_border.y)
+
+        for i in get_all_y_axis:
+            get_all_x_axis = []
+            for j, (rect_border, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                if i == rect_border.y:
+                    get_all_x_axis.append(rect_border.x)
+                if sorted(get_all_x_axis) == check_line_filled:
+                    for k, (rect_border, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                        if rect_border.y == i:
+                            if i not in no_of_rows_to_remove:
+                                no_of_rows_to_remove.append(i)
+                            bricks_to_remove.append(k)
+
+        result = [item for index, item in enumerate(bottom_bricks_border) if index not in bricks_to_remove]
+        bottom_bricks_border = result.copy()
+        result = [item for index, item in enumerate(bottom_bricks) if index not in bricks_to_remove]
+        bottom_bricks = result.copy()
+
+        try:
+            for i in no_of_rows_to_remove:
+                for j, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(bottom_bricks, bottom_bricks_border)):
+                    if rect2.y < i:
+                        rect1.y += vel_y
+                        rect2.y += vel_y
+        except TypeError:
+            pass
+
         keys = pygame.key.get_pressed()
 
         prev_down_state = down_pressed
         down_pressed = keys[pygame.K_UP]
 
+        rotations = [rotation]
         if down_pressed and not prev_down_state:
+            check_valid_rotations = True
             if shape_name == "s_l" or shape_name == "s_r" or shape_name == "bar":
-                if rotation < 1:
-                    rotation += 1
+                if rotations[0] < 1:
+                    rotations[0] += 1
                 else:
-                    rotation = 0
+                    rotations[0] = 0
+                for i, (all_rect, vx_border, vy_border) in enumerate(shapes[1][rotations[0]]):
+                    if all_rect.x + WIDTH or all_rect.x < 0 or all_rect.y + rect_height > HEIGHT:
+                        if all_rect.x + rect_width > WIDTH:
+                            check_valid_rotations = False
+                            break
+                        if all_rect.x < 0:
+                            check_valid_rotations = False
+                            break
+                        if all_rect.y + rect_height >= HEIGHT:
+                            check_valid_rotations = False
+                            break
+
+                if check_valid_rotations:
+                    rotation = rotations[0]
+
             elif shape_name == "t" or shape_name == "l_l" or shape_name == "l_r":
-                if rotation < 3:
-                    rotation += 1
+                if rotations[0] < 3:
+                    rotations[0] += 1
                 else:
-                    rotation = 0
+                    rotations[0] = 0
+                for i, (all_rect, vx_border, vy_border) in enumerate(shapes[1][rotations[0]]):
+                    if all_rect.x + WIDTH > WIDTH or all_rect.x < 0 or all_rect.y + rect_height >= HEIGHT:
+                        if all_rect.x + rect_width > WIDTH:
+                            check_valid_rotations = False
+                            break
+                        if all_rect.x < 0:
+                            check_valid_rotations = False
+                            break
+                        if all_rect.y + rect_height >= HEIGHT:
+                            check_valid_rotations = False
+                            break
+                        for j, (rect_border, vx_border, vy_border) in enumerate(bottom_bricks_border):
+                            if rect_border.x == all_rect.x and rect_border.y == all_rect.y:
+                                check_valid_rotations = False
+                                break
+
+                if check_valid_rotations:
+                    rotation = rotations[0]
             elif box:
                 pass
 
@@ -704,11 +788,15 @@ def main():
                             state = False
 
             if state and not next_spawn:
-                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
-                    rect.x -= vel_x
-                    rect_border.x -= vel_x
-                    shape[0][i] = (rect, vx, vy)
-                    shape[1][i] = (rect_border, vx_border, vy_border)
+                for j in range(all_rotations):
+                    if j == rotation:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                            rect1.x -= vel_x
+                            rect2.x -= vel_x
+                    else:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shapes[0][j], shapes[1][j])):
+                            rect1.x -= vel_x
+                            rect2.x -= vel_x
 
         if keys[pygame.K_RIGHT]:
             state = True
@@ -721,11 +809,15 @@ def main():
                             state = False
 
             if state and not next_spawn:
-                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
-                    rect.x += vel_x
-                    rect_border.x += vel_x
-                    shape[0][i] = (rect, vx, vy)
-                    shape[1][i] = (rect_border, vx_border, vy_border)
+                for j in range(all_rotations):
+                    if j == rotation:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                            rect1.x += vel_x
+                            rect2.x += vel_x
+                    else:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shapes[0][j], shapes[1][j])):
+                            rect1.x += vel_x
+                            rect2.x += vel_x
 
         if keys[pygame.K_DOWN]:
             state = True
@@ -739,11 +831,15 @@ def main():
                             state = False
 
             if state:
-                for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(shape[1], shape[0])):
-                    rect.y += vel_y
-                    rect_border.y += vel_y
-                    shape[0][i] = (rect, vx, vy)
-                    shape[1][i] = (rect_border, vx_border, vy_border)
+                for j in range(all_rotations):
+                    if j == rotation:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shape[0], shape[1])):
+                            rect1.y += vel_y
+                            rect2.y += vel_y
+                    else:
+                        for i, ((rect1, vx1, vy1), (rect2, vx2, vy2)) in enumerate(zip(shapes[0][j], shapes[1][j])):
+                            rect1.y += vel_y
+                            rect2.y += vel_y
 
         clock.tick(15)
         draw(shape, bottom_bricks, bottom_bricks_border)
