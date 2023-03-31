@@ -1,7 +1,6 @@
 import pygame
 import pygame.mixer
 import random
-import math
 import time
 
 
@@ -238,6 +237,7 @@ def l_l_shape():
     borders = all_rotations_borders
 
     return blocks, borders
+
 
 def l_r_shape():
     blocks = []
@@ -621,12 +621,10 @@ def main():
         l_l = l_l_shape()
         l_r = l_r_shape()
 
-
         if next_spawn:
             shape_count += 1
             all_shapes = [bar, box, t, s_l, s_r, l_l, l_r]
             shapes = random.choice(all_shapes)
-            # shapes = box
             all_rotations = len(shapes[0])
             shape_name = shape_names[all_shapes.index(shapes)]
             next_block = time.time() + 0.5
@@ -640,12 +638,10 @@ def main():
             else:
                 rotation = 0
 
-        # current_shape_all_rotations = tuple(shapes)
         blocks = shapes[0]
         borders = shapes[1]
 
         shape = blocks[rotation], borders[rotation]
-        # shape = current_shape_all_rotations[0][rotation], current_shape_all_rotations[1][rotation]
 
         for i, (rect, vx, vy) in enumerate(shape[1]):
             if not next_spawn:
