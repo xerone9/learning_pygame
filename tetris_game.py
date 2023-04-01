@@ -705,6 +705,16 @@ def main():
                                 no_of_rows_to_remove.append(i)
                             bricks_to_remove.append(k)
 
+        # For Animating Destructive Line Below
+
+        # removing_borders, removing_blocks = bottom_bricks_border.copy(), bottom_bricks.copy()
+        # for i, ((rect_border, vx_border, vy_border), (rect, vx, vy)) in enumerate(zip(bottom_bricks_border, bottom_bricks)):
+        #     if i in bricks_to_remove:
+        #         removing_borders.remove((rect_border, vx_border, vy_border))
+        #         removing_blocks.remove((rect, vx, vy))
+        #         bottom_bricks_border = removing_borders.copy()
+        #         bottom_bricks = removing_blocks.copy()
+
         result = [item for index, item in enumerate(bottom_bricks_border) if index not in bricks_to_remove]
         bottom_bricks_border = result.copy()
         result = [item for index, item in enumerate(bottom_bricks) if index not in bricks_to_remove]
