@@ -308,22 +308,6 @@ def usman_brain(all_positions, players_positions, cpu_positions):
     return mark_here
 
 
-    # if len(all_positions) % 2 != 0:
-    #     if len(all_positions) == 9:
-    #         return random.choice([1, 3, 5, 7, 9])
-    #     elif len(all_positions) == 7:
-    #         if 5 in cpu_positions:
-    #             pass
-    #         else:
-    #             if 5 in players_positions:
-    #                 pass
-    #             else:
-    #                 if
-    #
-    # else:
-    #     print("I am odd")
-
-
 def draw(player_signs, cpu_signs, circle_points, cross_points, draw_points):
     # Stage
     WIN.fill(BG_COLOR)
