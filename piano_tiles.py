@@ -18,8 +18,8 @@ HEIGHT = 800
 BG_COLOR = (173, 216, 230)
 separate_tile_border = (255, 255, 255)
 
-PLAYER_WIDTH = 98
-PLAYER_HEIGHT = 120
+TILE_WIDTH = 98
+TILE_HEIGHT = 120
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
@@ -48,7 +48,7 @@ def get_gif_frames(filename, width, height):
 def create_tile(x):
     vx = 0
     vy = 2
-    tile = pygame.Rect(x, -120, PLAYER_WIDTH, PLAYER_HEIGHT), vx, vy
+    tile = pygame.Rect(x, -120, TILE_WIDTH, TILE_HEIGHT), vx, vy
     return tile
 
 
@@ -172,7 +172,7 @@ def main():
                         music_duration = time.time() + music_play_time
                         key_pressed = False
                     else:
-                        wrong_tile = pygame.Rect(first_tile, y_value, PLAYER_WIDTH, PLAYER_HEIGHT)
+                        wrong_tile = pygame.Rect(first_tile, y_value, TILE_WIDTH, TILE_HEIGHT)
                         pygame.draw.rect(screen, "red", wrong_tile)
                         pygame.display.flip()
                         running = False
@@ -187,7 +187,7 @@ def main():
                         music_duration = time.time() + music_play_time
                         key_pressed = False
                     else:
-                        wrong_tile = pygame.Rect(second_tile, y_value, PLAYER_WIDTH, PLAYER_HEIGHT)
+                        wrong_tile = pygame.Rect(second_tile, y_value, TILE_WIDTH, TILE_HEIGHT)
                         pygame.draw.rect(screen, "red", wrong_tile)
                         pygame.display.flip()
                         running = False
@@ -202,7 +202,7 @@ def main():
                         music_duration = time.time() + music_play_time
                         key_pressed = False
                     else:
-                        wrong_tile = pygame.Rect(third_tile, y_value, PLAYER_WIDTH, PLAYER_HEIGHT)
+                        wrong_tile = pygame.Rect(third_tile, y_value, TILE_WIDTH, TILE_HEIGHT)
                         pygame.draw.rect(screen, "red", wrong_tile)
                         pygame.display.flip()
                         running = False
@@ -217,7 +217,7 @@ def main():
                         music_duration = time.time() + music_play_time
                         key_pressed = False
                     else:
-                        wrong_tile = pygame.Rect(forth_tile, y_value, PLAYER_WIDTH, PLAYER_HEIGHT)
+                        wrong_tile = pygame.Rect(forth_tile, y_value, TILE_WIDTH, TILE_HEIGHT)
                         pygame.draw.rect(screen, "red", wrong_tile)
                         pygame.display.flip()
                         running = False
